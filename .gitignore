@@ -1,0 +1,15 @@
+# Local-only: original game file backups and downloaded third-party archives
+Backups/
+downloads/
+
+# Build output
+bin/
+obj/
+
+# Third-party binaries used only as compile references (BepInEx is installed separately)
+lib/
+
+# IDE
+.vs/
+.idea/
+*.user
