@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Reference Include="BepInEx" HintPath="$(BepInExCoreDir)\BepInEx.dll" Private="false" />
+    <Reference Include="0Harmony" HintPath="$(BepInExCoreDir)\0Harmony.dll" Private="false" />
     <Reference Include="DNO.Main" HintPath="$(ManagedDir)\DNO.Main.dll" Private="false" />
     <Reference Include="Unity.Entities" HintPath="$(ManagedDir)\Unity.Entities.dll" Private="false" />
     <Reference Include="Unity.Collections" HintPath="$(ManagedDir)\Unity.Collections.dll" Private="false" />
