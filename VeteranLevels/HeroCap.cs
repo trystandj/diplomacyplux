@@ -19,7 +19,7 @@ namespace VeteranLevels
         private const int ResearchFlagUnit = 16;
         private const float CapWarningInterval = 60f;
 
-        /// <summary>Set by the hero panel's buy button; handled on the next system update.</summary>
+        /// <summary>Set by the research tree's Hero Cap buttons; handled on the next system update.</summary>
         internal static bool BuyCapUpgradeRequested;
 
         public int HeroCap { get; private set; }

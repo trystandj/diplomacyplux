@@ -9,14 +9,14 @@ Your units gain experience from kills and level up into named veterans.
 - **Experience:** a unit gets XP for each enemy it kills. Each level needs more XP than the last, up to level 10.
 - **Bonuses per level:** +5% damage (melee and ranged), +5% max health, and +1% model size.
 - **Names:** at their first level-up, units get a name, then a title for each level: *"Aldric the Blooded"* … *"Aldric the Immortal"*.
-- **Hero cap:** a unit becomes a hero when it first levels up. You can have 5 heroes; at the cap, other units don't gain XP until a hero dies. Press F8 to open the hero panel, where you can raise the cap to 10 (10 soul crystals) and then 15 (20 soul crystals).
+- **Hero cap:** a unit becomes a hero when it first levels up. You can have 5 heroes; at the cap, other units don't gain XP until a hero dies. Press F8 (or the Veterans button on the game's research screen) to open the Veteran Research tree, where you can research Hero Cap I to raise the cap to 10 (20 soul crystals) and then Hero Cap II for 15 (40 soul crystals).
 - **Promotion:** units in a promotion chain become the next unit type when they reach level 5, starting again at level 0 with a full heal and keeping their name. The last unit type in a chain levels up to 10. Default chains:
   - Spearman → Swordsman → Knight
   - Archer → Crossbowman
   - Horseman → Cavalier → Dark Knight
 
   Units in a tower or building wait until they leave. Units outside the chains (siege, healers) don't promote and level up to 10.
-- **Tamed creatures:** research Beast Taming in the hero panel (F8, 25 soul crystals) and the Barracks can train wolves (1 population) and Heffalumps (4 population), each costing 1 food for now while testing, under your control. Before the research their Barracks buttons show as locked.
+- **Tamed creatures:** research Beast Taming in the Veteran Research tree (F8, 50 soul crystals) and the Barracks can train wolves (200 food, 1 population) and Heffalumps (500 food, 4 population) under your control. They take orders like soldiers, clear fog of war and have half the health of wild ones. Before the research their Barracks buttons show as locked.
 - **Soul crystals:** a unit reaching level 5 earns you 2 soul crystals, and level 10 earns 5 more.
 - **Enemy heroes:** about 1 in 30 enemy wave units spawns as a hero at level 2, with the same per-level bonuses. Heroes gain XP by killing your units and level up the same way. They show a red label and XP bar (hidden in the fog of war), and an announcement says when heroes join an attack and when one falls.
 - **On screen:** a name label and XP bar above each veteran, plus an announcement when a unit levels up.
@@ -25,7 +25,7 @@ Your units gain experience from kills and level up into named veterans.
 
 | Key | Action |
 |---|---|
-| F8 | Open/close the hero panel (hero count, cap upgrades, research) |
+| F8 | Open/close the Veteran Research tree (hero count, Hero Cap and Beast Taming research) |
 | F9 | Show/hide veteran labels and XP bars |
 | F10 | Give every selected unit one level (cheat) |
 | F11 | Drop 50 wood and 50 stone at the mouse cursor; walk a unit over the piles to collect (cheat) |

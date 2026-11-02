@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace VeteranLevels
 {
-    /// <summary>IMGUI overlay: names above veteran units and enemy heroes, announcements, and the hero panel.</summary>
+    /// <summary>IMGUI overlay: names above veteran units and enemy heroes, and announcements. Purchases live in <see cref="ResearchTreeWindow"/>.</summary>
     internal static class VeterancyOverlay
     {
         private const float ToastSeconds = 6f;
@@ -17,10 +17,6 @@ namespace VeteranLevels
         private static readonly List<(string text, float until)> Toasts = new List<(string, float)>();
         private static GUIStyle _labelStyle;
         private static GUIStyle _toastStyle;
-        private static GUIStyle _panelStyle;
-
-        /// <summary>Toggled by the hero panel key.</summary>
-        public static bool HeroPanelOpen;
 
         public static void Announce(string text)
         {
@@ -32,17 +28,13 @@ namespace VeteranLevels
 
         public static void Draw(World world)
         {
-            if (IsGameUiCovered())
+            if (Event.current.type != EventType.Repaint || IsGameUiCovered())
                 return;
             InitStyles();
             var system = world != null && world.IsCreated ? world.GetExistingSystem<VeterancySystem>() : null;
-
-            // The panel has a button, so it handles every IMGUI event; the rest only draws.
-            if (HeroPanelOpen && system != null)
-                DrawHeroPanel(system);
-            if (Event.current.type != EventType.Repaint)
-                return;
             DrawToasts();
+            if (ResearchTreeWindow.IsOpen)
+                return;
 
             if (!Plugin.ShowLabels.Value)
                 return;
@@ -70,45 +62,6 @@ namespace VeteranLevels
                 }
                 DrawXpBar(screen.x, top + 19f, veteran);
             }
-        }
-
-        private static void DrawHeroPanel(VeterancySystem system)
-        {
-            var area = new Rect(20f, 160f, 320f, 178f);
-            GUI.Box(area, GUIContent.none);
-            GUILayout.BeginArea(new Rect(area.x + 10f, area.y + 8f, area.width - 20f, area.height - 16f));
-            GUILayout.Label("Heroes", _panelStyle);
-            GUILayout.Label($"{system.CountHeroes()} / {system.HeroCap} heroes    {system.SoulCrystals} soul crystals");
-
-            var cost = system.NextUpgradeCost;
-            if (cost.HasValue)
-            {
-                int nextCap = system.HeroCap + Plugin.HeroCapPerUpgrade.Value;
-                GUI.enabled = system.SoulCrystals >= cost.Value;
-                if (GUILayout.Button($"Raise cap to {nextCap} ({cost.Value} soul crystals)"))
-                    VeterancySystem.BuyCapUpgradeRequested = true;
-                GUI.enabled = true;
-            }
-            else
-            {
-                GUILayout.Label("Hero cap fully upgraded.");
-            }
-
-            GUILayout.Label("Research", _panelStyle);
-            if (system.BeastTamingResearched)
-            {
-                GUILayout.Label("Beast Taming: the Barracks can train creatures.");
-            }
-            else
-            {
-                int researchCost = Plugin.BeastTamingCost.Value;
-                GUI.enabled = system.SoulCrystals >= researchCost;
-                if (GUILayout.Button($"Beast Taming: wolves & Heffalumps ({researchCost} soul crystals)"))
-                    VeterancySystem.BuyBeastTamingRequested = true;
-                GUI.enabled = true;
-            }
-            GUILayout.Label($"{Plugin.HeroPanelKey.Value}: close");
-            GUILayout.EndArea();
         }
 
         /// <summary>True while the pause menu or another full-screen game panel is open.</summary>
@@ -169,7 +122,6 @@ namespace VeteranLevels
                 return;
             _labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 13, fontStyle = FontStyle.Bold };
             _toastStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, fontSize = 18, fontStyle = FontStyle.Bold };
-            _panelStyle = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold };
         }
     }
 }

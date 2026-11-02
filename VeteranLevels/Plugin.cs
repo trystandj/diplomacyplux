@@ -15,7 +15,7 @@ namespace VeteranLevels
     {
         public const string Guid = "trystan.dino.veteranlevels";
         public const string Name = "Veteran Levels";
-        public const string Version = "0.6.0";
+        public const string Version = "0.8.0";
 
         internal static ManualLogSource Log;
 
@@ -36,10 +36,13 @@ namespace VeteranLevels
         /// <summary>Parsed <see cref="HeroCapUpgradeCosts"/>: soul crystal cost of each cap upgrade, in order.</summary>
         internal static List<int> CapUpgradeCosts;
         internal static ConfigEntry<KeyCode> HeroPanelKey;
+        internal static ConfigEntry<string> HeroCapIcon;
+        internal static ConfigEntry<string> BeastTamingIcon;
         internal static ConfigEntry<int> PromotionLevel;
         internal static ConfigEntry<string> PromotionChains;
         internal static ConfigEntry<string> TrainableCreatures;
         internal static ConfigEntry<int> BeastTamingCost;
+        internal static ConfigEntry<float> CreatureHealth;
         internal static ConfigEntry<bool> ShowLabels;
         internal static ConfigEntry<KeyCode> ToggleLabelsKey;
         internal static ConfigEntry<KeyCode> LevelUpSelectedKey;
@@ -69,18 +72,24 @@ namespace VeteranLevels
             BaseHeroCap = Config.Bind("Hero Cap", "BaseHeroCap", 5,
                 "How many heroes (named units, level 1 or promoted) you can have before buying upgrades. At the cap, other units don't gain XP.");
             HeroCapPerUpgrade = Config.Bind("Hero Cap", "HeroCapPerUpgrade", 5, "Extra hero slots per cap upgrade.");
-            HeroCapUpgradeCosts = Config.Bind("Hero Cap", "HeroCapUpgradeCosts", "10, 20",
-                "Soul crystal cost of each cap upgrade, in order. Default: 5 -> 10 heroes for 10 crystals, 10 -> 15 for 20.");
+            HeroCapUpgradeCosts = Config.Bind("Hero Cap", "HeroCapUpgradeCosts", "20, 40",
+                "Soul crystal cost of each cap upgrade, in order. Default: 5 -> 10 heroes for 20 crystals, 10 -> 15 for 40.");
             CapUpgradeCosts = ParseCosts(HeroCapUpgradeCosts.Value);
-            HeroPanelKey = Config.Bind("Hero Cap", "HeroPanelKey", KeyCode.F8, "Key that opens the hero panel (hero count and cap upgrades).");
+            HeroPanelKey = Config.Bind("Hero Cap", "HeroPanelKey", KeyCode.F8,
+                "Key that opens the Veteran Research tree (hero cap upgrades and Beast Taming). The game's research screen also gets a Veterans button that opens it.");
+            HeroCapIcon = Config.Bind("Display", "HeroCapIcon", "",
+                "Game research whose icon the Hero Cap researches use (names are listed in the log when the research tree is built). Empty picks one automatically.");
+            BeastTamingIcon = Config.Bind("Display", "BeastTamingIcon", "", "Game research whose icon Beast Taming uses. Empty picks one automatically.");
             PromotionLevel = Config.Bind("Promotion", "PromotionLevel", 5,
                 "Level at which a unit in a promotion chain becomes the next unit type, starting again at level 0. The last unit type in a chain levels up to MaxLevel.");
             PromotionChains = Config.Bind("Promotion", "PromotionChains",
                 "Spearman > Swordsman > Knight, Archer > Crossbowman, Horseman > Cavalier > DarkKnight",
                 "Comma-separated promotion chains of unit types (names from the game's UnitType list). Units not in a chain don't promote and level up to MaxLevel. Empty disables promotion.");
-            TrainableCreatures = Config.Bind("Creatures", "TrainableCreatures", "Wolf:1:1:25, Giant:1:4:75",
+            TrainableCreatures = Config.Bind("Creatures", "TrainableCreatures", "Wolf:200:1:25, Giant:500:4:75",
                 "Creatures the Barracks can train after the Beast Taming research, as Type:food:population:seconds. Giant is the Heffalump. Empty disables creatures.");
-            BeastTamingCost = Config.Bind("Creatures", "BeastTamingCost", 25, "Soul crystal cost of the Beast Taming research.");
+            BeastTamingCost = Config.Bind("Creatures", "BeastTamingCost", 50, "Soul crystal cost of the Beast Taming research.");
+            CreatureHealth = Config.Bind("Creatures", "CreatureHealth", 0.5f,
+                "Max health of trained creatures compared to wild ones (0.5 = half). Wild creatures are unchanged.");
             ShowLabels = Config.Bind("Display", "ShowLabels", true, "Show name and level above veteran units.");
             ToggleLabelsKey = Config.Bind("Display", "ToggleLabelsKey", KeyCode.F9, "Key that shows/hides the veteran labels.");
             LevelUpSelectedKey = Config.Bind("Cheats", "LevelUpSelectedKey", KeyCode.F10,
@@ -147,6 +156,7 @@ namespace VeteranLevels
         private float _nextWorldReport;
         private int _worldReports;
         private bool _hookErrorLogged;
+        private bool _researchErrorLogged;
 
         private void Start()
         {
@@ -170,7 +180,7 @@ namespace VeteranLevels
                     VeterancySystem.SpawnResourcesRequested = true;
             }
             if (Input.GetKeyDown(Plugin.HeroPanelKey.Value))
-                VeterancyOverlay.HeroPanelOpen = !VeterancyOverlay.HeroPanelOpen;
+                ResearchTreeWindow.Toggle();
             if (Plugin.LevelUpSelectedKey.Value != KeyCode.None && Input.GetKeyDown(Plugin.LevelUpSelectedKey.Value))
             {
                 if (_hookedWorld == null)
@@ -188,6 +198,18 @@ namespace VeteranLevels
                 if (!_hookErrorLogged)
                     Plugin.Log.LogError($"Failed to hook the game world: {e}");
                 _hookErrorLogged = true;
+            }
+
+            try
+            {
+                var world = _hookedWorld != null && _hookedWorld.IsCreated ? _hookedWorld : null;
+                ResearchTreeWindow.Tick(world?.GetExistingSystem<VeterancySystem>());
+            }
+            catch (Exception e)
+            {
+                if (!_researchErrorLogged)
+                    Plugin.Log.LogError($"Veteran research window failed: {e}");
+                _researchErrorLogged = true;
             }
         }
 

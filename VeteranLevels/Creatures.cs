@@ -39,7 +39,7 @@ namespace VeteranLevels
     {
         private const int BeastTamingFlag = 1;
 
-        /// <summary>Set by the hero panel's research button; handled on the next system update.</summary>
+        /// <summary>Set by the research tree's Beast Taming button; handled on the next system update.</summary>
         internal static bool BuyBeastTamingRequested;
 
         public bool BeastTamingResearched => (ResearchFlags & BeastTamingFlag) != 0;
@@ -96,6 +96,7 @@ namespace VeteranLevels
                     Plugin.Log.LogWarning($"Ignoring invalid TrainableCreatures entry '{entry.Trim()}' (expected Type:food:people:seconds).");
                 }
             }
+            CreateCreatureControl();
         }
 
         /// <summary>Periodic: keeps creature prefabs, prices, research locks and Barracks entries in sync.</summary>
@@ -116,6 +117,9 @@ namespace VeteranLevels
                     EntityManager.RemoveComponent<ResearchObjectLock>(creature.Prefab);
             }
             AddCreaturesToBarracks();
+            RegisterCreatureFormations();
+            UpdateFriendlyCreatures();
+            LogPlayerUnitComponents();
         }
 
         private bool FindCreaturePrefabs()
@@ -255,6 +259,8 @@ namespace VeteranLevels
                     RemoveIfPresent<EnemyPatrolData>(unit);
                     RemoveIfPresent<EnemyUnitMetadata>(unit);
                     RemoveIfPresent<HideUnitInFog>(unit);   // player units are never hidden by fog
+                    MakeCreatureFriendly(unit, type);
+                    ApplyCreatureHealth(unit, type);
                     if (EntityManager.HasComponent<UnitCacheState>(unit) && EntityManager.HasComponent<Translation>(unit))
                     {
                         _recaching[unit] = EntityManager.GetComponentData<Translation>(unit);
