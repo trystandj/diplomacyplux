@@ -15,7 +15,7 @@ namespace VeteranLevels
     {
         public const string Guid = "trystan.dino.veteranlevels";
         public const string Name = "Veteran Levels";
-        public const string Version = "0.8.0";
+        public const string Version = "0.9.0";
 
         internal static ManualLogSource Log;
 
@@ -25,8 +25,11 @@ namespace VeteranLevels
         internal static ConfigEntry<float> DamagePerLevel;
         internal static ConfigEntry<float> HealthPerLevel;
         internal static ConfigEntry<float> SizePerLevel;
-        internal static ConfigEntry<int> EnemyHeroOneIn;
-        internal static ConfigEntry<int> EnemyHeroStartLevel;
+        internal static ConfigEntry<float> EnemyHeroStartPercent;
+        internal static ConfigEntry<float> EnemyHeroPercentPerWave;
+        internal static ConfigEntry<float> EnemyHeroMaxPercent;
+        internal static ConfigEntry<int> EnemyHeroMinLevel;
+        internal static ConfigEntry<int> EnemyHeroMaxLevel;
         internal static ConfigEntry<string> SoulCrystalRewards;
         /// <summary>Parsed <see cref="SoulCrystalRewards"/>: level reached -> soul crystals awarded.</summary>
         internal static Dictionary<int, int> SoulCrystalsByLevel;
@@ -63,9 +66,13 @@ namespace VeteranLevels
                 "Extra max health per level (0.05 = +5% per level). Levels are restored from saves using this value, so changing it mid-campaign changes the levels of saved units.");
             SizePerLevel = Config.Bind("Bonuses", "SizePerLevel", 0.01f,
                 "Extra model size per level (0.01 = 1% bigger per level). Visual only; set to 0 to disable.");
-            EnemyHeroOneIn = Config.Bind("Enemy Heroes", "EnemyHeroOneIn", 30,
-                "About 1 in this many enemy wave units spawns as a hero. Heroes level up by killing your units. 0 disables enemy heroes.");
-            EnemyHeroStartLevel = Config.Bind("Enemy Heroes", "EnemyHeroStartLevel", 2, "Level an enemy hero starts at.");
+            EnemyHeroStartPercent = Config.Bind("Enemy Heroes", "EnemyHeroStartPercent", 5f,
+                "Percent of the first wave's units that are heroes. Heroes level up by killing your units. 0 disables enemy heroes.");
+            EnemyHeroPercentPerWave = Config.Bind("Enemy Heroes", "EnemyHeroPercentPerWave", 3f,
+                "Extra hero percent for each wave after the first (5%, 8%, 11%, ...).");
+            EnemyHeroMaxPercent = Config.Bind("Enemy Heroes", "EnemyHeroMaxPercent", 15f, "Highest percent of a wave that can be heroes.");
+            EnemyHeroMinLevel = Config.Bind("Enemy Heroes", "EnemyHeroMinLevel", 1, "Lowest level an enemy hero starts at.");
+            EnemyHeroMaxLevel = Config.Bind("Enemy Heroes", "EnemyHeroMaxLevel", 5, "Highest level an enemy hero starts at (each hero gets a random level in between).");
             SoulCrystalRewards = Config.Bind("Rewards", "SoulCrystalRewards", "5:2, 10:5",
                 "Soul crystals you get when one of your units reaches a level, as level:crystals pairs. Empty disables rewards.");
             SoulCrystalsByLevel = ParseRewards(SoulCrystalRewards.Value);

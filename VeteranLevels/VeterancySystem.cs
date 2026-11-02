@@ -58,6 +58,8 @@ namespace VeteranLevels
 
         /// <summary>Wave enemies already rolled for hero status (dropped once they enter the map).</summary>
         private readonly HashSet<Entity> _rolledEnemies = new HashSet<Entity>();
+        /// <summary>Running hero credit for wave units (see RollEnemyHeroes).</summary>
+        private float _heroCredit;
 
         private HashSet<Entity> _seenRequests = new HashSet<Entity>();
         private HashSet<Entity> _seenRequestsNext = new HashSet<Entity>();
@@ -197,12 +199,22 @@ namespace VeteranLevels
             }
         }
 
-        /// <summary>Each newly spawned wave enemy has a 1 in EnemyHeroOneIn chance to become a hero.</summary>
+        /// <summary>
+        /// Turns a share of each wave's units into heroes: EnemyHeroStartPercent on the first wave,
+        /// EnemyHeroPercentPerWave more on each later one, up to EnemyHeroMaxPercent. Each unit adds
+        /// the percent to a running credit and becomes a hero with a chance equal to the credit, which
+        /// keeps the share close to the percent while still picking heroes at random.
+        /// </summary>
         private void RollEnemyHeroes()
         {
-            int oneIn = Plugin.EnemyHeroOneIn.Value;
-            if (oneIn <= 0 || _arrivingEnemies.IsEmpty)
+            if (Plugin.EnemyHeroStartPercent.Value <= 0f || _arrivingEnemies.IsEmpty)
                 return;
+            int wave = math.max(1, SpawnedWaves());
+            float percent = math.min(Plugin.EnemyHeroMaxPercent.Value,
+                Plugin.EnemyHeroStartPercent.Value + Plugin.EnemyHeroPercentPerWave.Value * (wave - 1));
+            float share = math.max(0f, percent) / 100f;
+            int minLevel = math.clamp(Plugin.EnemyHeroMinLevel.Value, 1, Plugin.MaxLevel.Value);
+            int maxLevel = math.clamp(Plugin.EnemyHeroMaxLevel.Value, minLevel, Plugin.MaxLevel.Value);
 
             Entity lastHero = Entity.Null;
             int heroes = 0;
@@ -210,13 +222,17 @@ namespace VeteranLevels
             {
                 foreach (var unit in units)
                 {
-                    if (!_rolledEnemies.Add(unit) || Veterans.ContainsKey(unit) || Veteran.Rng.Next(oneIn) != 0)
+                    if (!_rolledEnemies.Add(unit) || Veterans.ContainsKey(unit))
                         continue;
+                    _heroCredit += share;
+                    if (Veteran.Rng.NextDouble() >= _heroCredit)
+                        continue;
+                    _heroCredit -= 1f;
 
                     var veteran = new Veteran
                     {
                         IsEnemy = true,
-                        Level = math.clamp(Plugin.EnemyHeroStartLevel.Value, 1, Plugin.MaxLevel.Value),
+                        Level = Veteran.Rng.Next(minLevel, maxLevel + 1),
                         Name = Veteran.RandomName(),
                         BaseHealthMultiplier = EntityManager.GetComponentData<HealthBase>(unit).GetMaxHealthMultiplier(),
                     };
@@ -232,6 +248,22 @@ namespace VeteranLevels
                 VeterancyOverlay.Announce($"An enemy hero, {Veterans[lastHero].DisplayName}, joins the attack!");
             else if (heroes > 1)
                 VeterancyOverlay.Announce($"{heroes} enemy heroes join the attack!");
+        }
+
+        /// <summary>
+        /// Major waves spawned so far, counted the way the game does for its wave achievements
+        /// (the counts are part of the save).
+        /// </summary>
+        private static int SpawnedWaves()
+        {
+            var waves = GameState.WavesConfig.waves;
+            if (waves == null)
+                return 0;
+            int count = 0;
+            for (int i = 0; i < waves.Length; i++)
+                if (waves[i].waveType != ScriptableObjectDefinitions.WaveType.Minor)
+                    count += waves[i].waveDynamicData.spawnsCount;
+            return count;
         }
 
         private void ScaleNewProjectiles()
