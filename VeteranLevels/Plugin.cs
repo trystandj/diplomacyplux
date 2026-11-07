@@ -15,7 +15,7 @@ namespace VeteranLevels
     {
         public const string Guid = "trystan.dino.veteranlevels";
         public const string Name = "Veteran Levels";
-        public const string Version = "0.9.0";
+        public const string Version = "0.10.0";
 
         internal static ManualLogSource Log;
 
@@ -46,6 +46,13 @@ namespace VeteranLevels
         internal static ConfigEntry<string> TrainableCreatures;
         internal static ConfigEntry<int> BeastTamingCost;
         internal static ConfigEntry<float> CreatureHealth;
+        internal static ConfigEntry<string> AbundanceUpgradeCosts;
+        /// <summary>Parsed <see cref="AbundanceUpgradeCosts"/>: soul crystal cost of each Abundance level, in order.</summary>
+        internal static List<int> AbundanceCosts;
+        internal static ConfigEntry<float> FishPerLevel;
+        internal static ConfigEntry<float> BerriesPerLevel;
+        internal static ConfigEntry<float> FarmSpeedPerLevel;
+        internal static ConfigEntry<string> AbundanceIcon;
         internal static ConfigEntry<bool> ShowLabels;
         internal static ConfigEntry<KeyCode> ToggleLabelsKey;
         internal static ConfigEntry<KeyCode> LevelUpSelectedKey;
@@ -81,9 +88,9 @@ namespace VeteranLevels
             HeroCapPerUpgrade = Config.Bind("Hero Cap", "HeroCapPerUpgrade", 5, "Extra hero slots per cap upgrade.");
             HeroCapUpgradeCosts = Config.Bind("Hero Cap", "HeroCapUpgradeCosts", "20, 40",
                 "Soul crystal cost of each cap upgrade, in order. Default: 5 -> 10 heroes for 20 crystals, 10 -> 15 for 40.");
-            CapUpgradeCosts = ParseCosts(HeroCapUpgradeCosts.Value);
+            CapUpgradeCosts = ParseCosts(HeroCapUpgradeCosts.Value, "HeroCapUpgradeCosts");
             HeroPanelKey = Config.Bind("Hero Cap", "HeroPanelKey", KeyCode.F8,
-                "Key that opens the Veteran Research tree (hero cap upgrades and Beast Taming). The game's research screen also gets a Veterans button that opens it.");
+                "Key that opens the Veteran Research tree (hero cap upgrades, Beast Taming and Abundance). The game's research screen also gets a Veterans button that opens it.");
             HeroCapIcon = Config.Bind("Display", "HeroCapIcon", "",
                 "Game research whose icon the Hero Cap researches use (names are listed in the log when the research tree is built). Empty picks one automatically.");
             BeastTamingIcon = Config.Bind("Display", "BeastTamingIcon", "", "Game research whose icon Beast Taming uses. Empty picks one automatically.");
@@ -97,6 +104,17 @@ namespace VeteranLevels
             BeastTamingCost = Config.Bind("Creatures", "BeastTamingCost", 50, "Soul crystal cost of the Beast Taming research.");
             CreatureHealth = Config.Bind("Creatures", "CreatureHealth", 0.5f,
                 "Max health of trained creatures compared to wild ones (0.5 = half). Wild creatures are unchanged.");
+            AbundanceUpgradeCosts = Config.Bind("Abundance", "AbundanceCosts", "15, 30, 50",
+                "Soul crystal cost of each Abundance research level, in order (at most 7 levels). Empty disables Abundance.");
+            AbundanceCosts = ParseCosts(AbundanceUpgradeCosts.Value, "AbundanceCosts");
+            if (AbundanceCosts.Count > 7)
+                AbundanceCosts.RemoveRange(7, AbundanceCosts.Count - 7);
+            FishPerLevel = Config.Bind("Abundance", "FishPerLevel", 0.5f,
+                "Extra fish in every fishing spot per Abundance level (0.5 = +50% per level). Applied to the spots on the map when a level is bought.");
+            BerriesPerLevel = Config.Bind("Abundance", "BerriesPerLevel", 0.5f, "Extra berries on every berry bush per Abundance level (0.5 = +50% per level).");
+            FarmSpeedPerLevel = Config.Bind("Abundance", "FarmSpeedPerLevel", 0.2f,
+                "Extra farm production speed per Abundance level (0.2 = +20% per level). Farms never run out, so they work faster instead.");
+            AbundanceIcon = Config.Bind("Display", "AbundanceIcon", "", "Game research whose icon Abundance uses. Empty picks one automatically.");
             ShowLabels = Config.Bind("Display", "ShowLabels", true, "Show name and level above veteran units.");
             ToggleLabelsKey = Config.Bind("Display", "ToggleLabelsKey", KeyCode.F9, "Key that shows/hides the veteran labels.");
             LevelUpSelectedKey = Config.Bind("Cheats", "LevelUpSelectedKey", KeyCode.F10,
@@ -125,7 +143,7 @@ namespace VeteranLevels
             Log.LogInfo($"{Name} {Version} loaded.");
         }
 
-        private static List<int> ParseCosts(string text)
+        private static List<int> ParseCosts(string text, string setting)
         {
             var costs = new List<int>();
             foreach (var part in text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
@@ -133,7 +151,7 @@ namespace VeteranLevels
                 if (int.TryParse(part.Trim(), out int cost) && cost >= 0)
                     costs.Add(cost);
                 else
-                    Log.LogWarning($"Ignoring invalid HeroCapUpgradeCosts entry '{part.Trim()}'.");
+                    Log.LogWarning($"Ignoring invalid {setting} entry '{part.Trim()}'.");
             }
             return costs;
         }

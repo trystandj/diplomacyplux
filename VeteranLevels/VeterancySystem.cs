@@ -27,6 +27,7 @@ namespace VeteranLevels
     ///  - Only HeroCap player units can be heroes (HeroCap.cs), and units in a promotion chain
     ///    become the next unit type at PromotionLevel (Promotion.cs).
     ///  - The Barracks can train tamed creatures after the Beast Taming research (Creatures.cs).
+    ///  - The Abundance research gives more fish and berries and faster farms (Abundance.cs).
     /// </summary>
     [DisableAutoCreation]
     [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -106,6 +107,7 @@ namespace VeteranLevels
             _souls = GetEntityQuery(ComponentType.ReadWrite<CurrentSouls>());
             CreatePromotion();
             CreateCreatures();
+            CreateAbundance();
         }
 
         protected override void OnDestroy()
@@ -124,6 +126,7 @@ namespace VeteranLevels
                 RestoreLevelsFromSave();
                 RefreshHeroCap();
                 UpdateCreatures();
+                UpdateAbundance();
             }
 
             if (BuyCapUpgradeRequested)
@@ -135,6 +138,11 @@ namespace VeteranLevels
             {
                 BuyBeastTamingRequested = false;
                 BuyBeastTaming();
+            }
+            if (BuyAbundanceRequested)
+            {
+                BuyAbundanceRequested = false;
+                BuyAbundance();
             }
             if (SpawnResourcesRequested)
             {

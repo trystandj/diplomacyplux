@@ -39,7 +39,7 @@ namespace VeteranLevels
         private const float HeroCountHeight = 24f;
         private const float HeaderGap = 22f;
         private const float NodeCaptionHeight = 34f;
-        private const float WindowWidth = 760f;
+        private const float WindowWidth = 820f;
         private const float WindowMinHeight = 520f;
         private static readonly Color LineColor = new Color(0.62f, 0.5f, 0.32f, 0.9f);
         private static readonly Color TextColor = new Color(0.93f, 0.86f, 0.7f);
@@ -69,6 +69,7 @@ namespace VeteranLevels
         private static TMP_Text _heroesText;
         private static readonly List<Node> CapNodes = new List<Node>();
         private static Node _beastNode;
+        private static readonly List<Node> AbundanceNodes = new List<Node>();
         private static bool _open;
         private static bool _lastNativeOpen;
         private static float _nextRefresh;
@@ -164,6 +165,30 @@ namespace VeteranLevels
                 SetNode(_beastNode, state, "Beast Taming",
                     "The Barracks can train wolves and Heffalumps. They fight for you and gain levels like other units.", cost);
             }
+
+            for (int i = 0; i < AbundanceNodes.Count; i++)
+            {
+                int cost = Plugin.AbundanceCosts[i];
+                var state = system.AbundanceLevel > i ? NodeState.Completed
+                    : system.AbundanceLevel < i ? NodeState.Locked
+                    : crystals >= cost ? NodeState.Available : NodeState.Unaffordable;
+                string requirement = state == NodeState.Locked ? $"\nRequires Abundance {Roman(i)}." : "";
+                SetNode(AbundanceNodes[i], state, $"Abundance {Roman(i + 1)}", AbundanceDescription(i + 1) + requirement, cost);
+            }
+        }
+
+        private static string AbundanceDescription(int level)
+        {
+            string Percent(float multiplier) => $"+{(multiplier - 1f) * 100f:0}%";
+            var parts = new List<string>();
+            if (Plugin.FishPerLevel.Value > 0f)
+                parts.Add($"Fishing spots hold {Percent(VeterancySystem.FishMultiplier(level))} fish");
+            if (Plugin.BerriesPerLevel.Value > 0f)
+                parts.Add($"berry bushes hold {Percent(VeterancySystem.BerryMultiplier(level))} berries");
+            if (Plugin.FarmSpeedPerLevel.Value > 0f)
+                parts.Add($"farms work {Percent(1f + VeterancySystem.FarmBonus(level))} faster");
+            string text = parts.Count > 0 ? string.Join(", ", parts) + " (total, compared to normal)." : "No effect (all Abundance bonuses are 0 in the config).";
+            return char.ToUpper(text[0]) + text.Substring(1);
         }
 
         private static void SetNode(Node node, NodeState state, string title, string description, int cost)
@@ -245,6 +270,23 @@ namespace VeteranLevels
             _nextRefresh = 0f;
         }
 
+        private static void OnAbundanceNodeClicked(int index)
+        {
+            var node = AbundanceNodes[index];
+            Plugin.Log.LogInfo($"Research tree: Abundance {Roman(index + 1)} clicked ({node.State}).");
+            if (node.State == NodeState.Available)
+            {
+                AudioManager.PlayUISound(UIAudioEvent.Click);
+                VeterancySystem.BuyAbundanceRequested = true;
+            }
+            else
+            {
+                AudioManager.PlayUISound(UIAudioEvent.DiscardClick);
+                ExplainUnavailable(node, Plugin.AbundanceCosts[index], $"Research Abundance {Roman(index)} first.");
+            }
+            _nextRefresh = 0f;
+        }
+
         private static void ExplainUnavailable(Node node, int cost, string lockedReason)
         {
             if (node.State == NodeState.Completed)
@@ -264,7 +306,7 @@ namespace VeteranLevels
 
         private static void HideHints()
         {
-            foreach (var node in CapNodes.Append(_beastNode))
+            foreach (var node in CapNodes.Append(_beastNode).Concat(AbundanceNodes))
                 if (node != null && node.Hint != null)
                     node.Hint.HintCleanup();
         }
@@ -309,6 +351,7 @@ namespace VeteranLevels
         {
             CapNodes.Clear();
             _beastNode = null;
+            AbundanceNodes.Clear();
             _open = false;
 
             var nativeTexts = _nativePanel != null ? _nativePanel.GetComponentsInChildren<TMP_Text>(true) : new TMP_Text[0];
@@ -351,15 +394,18 @@ namespace VeteranLevels
             var heroOwner = owners.FirstOrDefault(o => (bool)AccessTools.Field(typeof(ResearchOwner), "isTownHall").GetValue(o)) ?? owners.FirstOrDefault();
             var beastOwner = owners.FirstOrDefault(o => ((string)AccessTools.Field(typeof(ResearchOwner), "ownerName").GetValue(o) ?? "").IndexOf("barrack", StringComparison.OrdinalIgnoreCase) >= 0)
                 ?? owners.Skip(1).FirstOrDefault() ?? heroOwner;
+            var harvestOwner = owners.FirstOrDefault(o => new[] { "farm", "fish", "food", "berr", "mill", "granar" }.Any(k =>
+                    ((string)AccessTools.Field(typeof(ResearchOwner), "ownerName").GetValue(o) ?? "").IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0))
+                ?? owners.FirstOrDefault(o => o != heroOwner && o != beastOwner) ?? heroOwner;
 
-            int rows = Math.Max(1, Plugin.CapUpgradeCosts.Count);
+            int rows = Math.Max(1, Math.Max(Plugin.CapUpgradeCosts.Count, Plugin.AbundanceCosts.Count));
             var nodeTemplate = FindItemTemplate();
             float nodeSize = nodeTemplate != null ? Math.Max(60f, GraphicsBounds((RectTransform)nodeTemplate.transform, ItemImages(nodeTemplate)).height) : 80f;
             float rowSpacing = nodeSize + NodeCaptionHeight + 30f;
 
             // Stack header icon, column title and hero count, then start the nodes below them,
             // using the real size of the owner icons so nothing overlaps.
-            float headerSize = new[] { heroOwner, beastOwner }.Where(o => o != null)
+            float headerSize = new[] { heroOwner, beastOwner, harvestOwner }.Where(o => o != null)
                 .Select(o => GraphicsBounds((RectTransform)o.transform, OwnerImages(o)).height).DefaultIfEmpty(0f).Max();
             float headerCenter = HeaderAreaTop + headerSize / 2f;
             float titleTop = HeaderAreaTop + headerSize + 6f;
@@ -383,8 +429,12 @@ namespace VeteranLevels
             AddText("Footer", $"{Plugin.HeroPanelKey.Value}: open / close", 18f, new Vector2(0f, -height + 34f), new Vector2(WindowWidth, 26f), TextAlignmentOptions.Center);
 
             bool beasts = Plugin.TrainableCreatures.Value.Trim().Length > 0;
-            float heroX = beasts ? -ColumnSpacing / 2f : 0f;
-            float beastX = ColumnSpacing / 2f;
+            bool harvest = Plugin.AbundanceCosts.Count > 0;
+            int columns = 1 + (beasts ? 1 : 0) + (harvest ? 1 : 0);
+            float ColumnX(int column) => (column - (columns - 1) / 2f) * ColumnSpacing;
+            float heroX = ColumnX(0);
+            float beastX = ColumnX(1);
+            float harvestX = ColumnX(beasts ? 2 : 1);
 
             AddHeader("HeroesHeader", heroOwner, heroX, headerCenter, titleTop, "Heroes");
             _heroesText = AddText("HeroCount", "", 18f, new Vector2(heroX, -countTop), new Vector2(220f, HeroCountHeight), TextAlignmentOptions.Center);
@@ -403,6 +453,20 @@ namespace VeteranLevels
                 AddHeader("BeastsHeader", beastOwner, beastX, headerCenter, titleTop, "Beasts");
                 var beastIcons = FindIcons(Plugin.BeastTamingIcon.Value, "hunt", "wolf", "beast", "animal", "tame", "cavalry", "horse");
                 _beastNode = AddNode("BeastTaming", nodeTemplate, nodeSize, beastX, firstNodeTop, beastIcons, OnBeastNodeClicked);
+            }
+
+            if (harvest)
+            {
+                AddHeader("HarvestHeader", harvestOwner, harvestX, headerCenter, titleTop, "Harvest");
+                var harvestIcons = FindIcons(Plugin.AbundanceIcon.Value, "fish", "farm", "berr", "food", "harvest", "wheat", "crop", "granar");
+                for (int i = 0; i < Plugin.AbundanceCosts.Count; i++)
+                {
+                    float top = firstNodeTop + i * rowSpacing;
+                    if (i > 0)
+                        AddLine(harvestX, top - rowSpacing + nodeSize / 2f + NodeCaptionHeight, top - nodeSize / 2f);
+                    int index = i;
+                    AbundanceNodes.Add(AddNode($"Abundance{i + 1}", nodeTemplate, nodeSize, harvestX, top, harvestIcons, () => OnAbundanceNodeClicked(index)));
+                }
             }
 
             AddShortcutToNativePanel(heroOwner);
@@ -514,7 +578,7 @@ namespace VeteranLevels
             button.targetGraphic = target;
             button.onClick.AddListener(Toggle);
             var hint = shortcut.AddComponent<HintableElement>();
-            hint.Init(new HintData { type = HintType.Mouse, Tittle = "Veteran Research", Description = $"Hero cap and beast research ({Plugin.HeroPanelKey.Value})." });
+            hint.Init(new HintData { type = HintType.Mouse, Tittle = "Veteran Research", Description = $"Hero cap, beast and harvest research ({Plugin.HeroPanelKey.Value})." });
 
             var label = NewText("Label", rect, "Veterans", 22f, TextAlignmentOptions.Top);
             label.rectTransform.anchorMin = new Vector2(0.5f, 0f);
@@ -649,7 +713,7 @@ namespace VeteranLevels
         {
             var names = ResearchPool().Where(r => r.icon != null).Select(r => r.researchName).ToArray();
             if (names.Length > 0)
-                Plugin.Log.LogInfo($"Research icons available for HeroCapIcon / BeastTamingIcon: {string.Join(", ", names)}");
+                Plugin.Log.LogInfo($"Research icons available for HeroCapIcon / BeastTamingIcon / AbundanceIcon: {string.Join(", ", names)}");
         }
 
         /// <summary>Uses the largest sprite in the game's research panel as the window background.</summary>

@@ -17,6 +17,7 @@ Your units gain experience from kills and level up into named veterans.
 
   Units in a tower or building wait until they leave. Units outside the chains (siege, healers) don't promote and level up to 10.
 - **Tamed creatures:** research Beast Taming in the Veteran Research tree (F8, 50 soul crystals) and the Barracks can train wolves (200 food, 1 population) and Heffalumps (500 food, 4 population) under your control. They take orders like soldiers, clear fog of war and have half the health of wild ones. Before the research their Barracks buttons show as locked.
+- **Abundance (Harvest column):** research Abundance I-III in the Veteran Research tree (15 / 30 / 50 soul crystals). Each level gives fishing spots +50% fish and berry bushes +50% berries (bushes also regrow to the bigger amount), and makes farms work 20% faster, since farms never run out. Fishing spots are enlarged when the level is bought; the amounts stay in your save.
 - **Soul crystals:** a unit reaching level 5 earns you 2 soul crystals, and level 10 earns 5 more.
 - **Enemy heroes:** 5% of the first wave's units spawn as heroes, 3% more each wave after that, up to 15%. Each hero starts at a random level from 1 to 5, with the same per-level bonuses. Heroes gain XP by killing your units and level up the same way. They show a red label and XP bar (hidden in the fog of war), and an announcement says when heroes join an attack and when one falls.
 - **On screen:** a name label and XP bar above each veteran, plus an announcement when a unit levels up.
@@ -25,7 +26,7 @@ Your units gain experience from kills and level up into named veterans.
 
 | Key | Action |
 |---|---|
-| F8 | Open/close the Veteran Research tree (hero count, Hero Cap and Beast Taming research) |
+| F8 | Open/close the Veteran Research tree (hero count, Hero Cap, Beast Taming and Abundance research) |
 | F9 | Show/hide veteran labels and XP bars |
 | F10 | Give every selected unit one level (cheat) |
 | F11 | Drop 50 wood and 50 stone at the mouse cursor; walk a unit over the piles to collect (cheat) |
